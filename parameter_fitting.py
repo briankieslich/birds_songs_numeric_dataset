@@ -146,7 +146,7 @@ est_rfc = Pipeline([('RFC', RandomForestClassifier())])
 est_knn = Pipeline([('KNN', KNeighborsClassifier())])
 
 clf = Pipeline(steps=[('base_predictions', base_transform),
-                      # add scaler to data ???
+                      ('scaler', StandardScaler),
                       ('meta_predictions', est_log)
                       ])
 
@@ -154,55 +154,57 @@ clf = Pipeline(steps=[('base_predictions', base_transform),
 # %% Homemade Gradient booster, more like random search:
 def ransea():
     param_grid_values = {
-        'base_predictions__spec__knn__model__n_neighbors': [1] +
-        [1, 2, 3, 4, 5, 6, 7, 8],
-        'base_predictions__spec__knn__model__weights': ['distance'] +
+        'base_predictions__spec__knn__model__n_neighbors': [5] +
+        [1, 2, 3, 4, 5],
+        'base_predictions__spec__knn__model__weights': ['uniform'] +
         ['uniform', 'distance'],
-        'base_predictions__spec__knn__model__p': [1] +
-        [1, 2, 3],
+        'base_predictions__spec__knn__model__p': [2] +
+        [1, 2],
 
-        'base_predictions__spec__dtc__model__criterion': ['entropy'] +
+        'base_predictions__spec__dtc__model__criterion': ['gini'] +
         ['gini', 'entropy'],
-        'base_predictions__spec__dtc__model__max_depth': [80] +
-        [*range(40, 180, 20)],
+        'base_predictions__spec__dtc__model__max_depth': [None] +
+        [*range(10, 151, 20)],
         'base_predictions__spec__dtc__model__random_state': [42],
 
-        'base_predictions__spec__rbs__model__gamma': ['scale'],
-        'base_predictions__spec__rbs__model__C': [1.1] +
-        [0.3, 0.5, 0.7, 1, 1.1, 1.5, 2, 2.5],
+        'base_predictions__spec__rbs__model__gamma': [0.005] +
+        [*np.linspace(0.001, 0.007, 7)],
+        'base_predictions__spec__rbs__model__C': [1] +
+        [0.3, 0.5, 0.7, 1, 1.1, 1.5],
         'base_predictions__spec__rbs__model__coef0': [0],
         'base_predictions__spec__rbs__model__random_state': [42],
 
-        'base_predictions__chro__pol__model__gamma': ['scale'],
-        'base_predictions__chro__pol__model__degree': [7] +
-        [2, 3, 4, 5, 6, 7, 8, 9, 10],
-        'base_predictions__chro__pol__model__C': [0.8] +
-        [*np.linspace(0.5, 1.6, 12)],
+        'base_predictions__chro__pol__model__gamma': [0.005] +
+        [*np.linspace(0.001, 0.007, 7)],
+        'base_predictions__chro__pol__model__degree': [4] +
+        [5, 6, 7, 8, 9, 10],
+        'base_predictions__chro__pol__model__C': [1] +
+        [*np.linspace(0.7, 1.6, 10)],
         'base_predictions__chro__pol__model__coef0': [0],
         'base_predictions__chro__pol__model__random_state': [42],
 
-        'base_predictions__chro__lin__model__gamma': ['scale'],
-        'base_predictions__chro__lin__model__C': [0.4] +
-        [0.1, 0.2, 0.4, 0.7, 1, 1.1, 1.5, 2],
+        'base_predictions__chro__lin__model__C': [1] +
+        [0.1, 0.2, 0.4, 0.7, 1, 1.1, 1.5],
         'base_predictions__chro__lin__model__coef0': [0],
         'base_predictions__chro__lin__model__random_state': [42],
 
-        'base_predictions__chro__rbc__model__gamma': ['scale'],
-        'base_predictions__chro__rbc__model__C': [0.1] +
-        [0.05, 0.1, 0.2, 0.4, 0.7, 1, 1.1],
+        'base_predictions__chro__rbc__model__gamma': [0.005] +
+        [*np.linspace(0.001, 0.007, 7)],
+        'base_predictions__chro__rbc__model__C': [1] +
+        [0.05, 0.1, 0.2, 0.4, 0.7, 1],
         'base_predictions__chro__rbc__model__coef0': [0],
         'base_predictions__chro__rbc__model__random_state': [42],
 
         'meta_predictions__LOG__penalty': ['l2'],
-        'meta_predictions__LOG__C': [0.4] +
-        [0.1, 0.2, 0.4, 0.5, 0.7, 1, 1.1],
+        'meta_predictions__LOG__C': [0.1] +
+        [0.1, 0.2, 0.4, 0.5],
         'meta_predictions__LOG__solver': ['lbfgs'],
         'meta_predictions__LOG__multi_class': ['multinomial'],
         'meta_predictions__LOG__max_iter': [1000],
         'meta_predictions__LOG__random_state': [42],
         }
 
-    top_score = 0.86
+    top_score = 0.8613
     search_params = [k for k, value in
                      param_grid_values.items() if len(value) > 1]
 
@@ -223,7 +225,7 @@ def ransea():
 
     for i in range(8):
 
-        part_param = np.random.choice(search_params, size=6,
+        part_param = np.random.choice(search_params, size=4,
                                       replace=False,
                                       p=proba_count/np.sum(proba_count))
 
@@ -262,13 +264,16 @@ def ransea():
             ind_1 = param_list.index(param_grid[key][1])
 
             if scor < 0:
-                param_grid_values[key][0] = param_grid[key][1]
+                if param_grid_values[key][0] > param_grid[key][1]:
+                    param_grid_values[key][0] = param_grid[key][1]
                 if ind_0 == ind_1 - 1:
                     ind_0 = 1
                 else:
                     ind_0 += 1
             elif scor > 0:
-                param_grid_values[key][0] = param_grid[key][0]
+                if param_grid_values[key][0] < param_grid[key][0]:
+                    param_grid_values[key][0] = param_grid[key][0]
+
                 if ind_1 == ind_0 + 1:
                     ind_1 = len(param_list) - 1
                 else:
@@ -299,41 +304,41 @@ ransea()
 
 # %% Baseline:
 param_grid_default = {
-    'base_predictions__spec__knn__model__n_neighbors': [5],
-    'base_predictions__spec__knn__model__weights': ['uniform'],
-    'base_predictions__spec__knn__model__p': [2],
+        'base_predictions__spec__knn__model__n_neighbors': [1],
+        'base_predictions__spec__knn__model__weights': ['uniform'],
+        'base_predictions__spec__knn__model__p': [1],
 
-    'base_predictions__spec__dtc__model__criterion': ['gini'],
-    'base_predictions__spec__dtc__model__max_depth': [None],
-    'base_predictions__spec__dtc__model__random_state': [42],
+        'base_predictions__spec__dtc__model__criterion': ['gini'],
+        'base_predictions__spec__dtc__model__max_depth': [60],
+        'base_predictions__spec__dtc__model__random_state': [42],
 
-    'base_predictions__spec__rbs__model__gamma': ['scale'],
-    'base_predictions__spec__rbs__model__C': [1],
-    'base_predictions__spec__rbs__model__coef0': [0],
-    'base_predictions__spec__rbs__model__random_state': [42],
+        'base_predictions__spec__rbs__model__gamma': ['scale'],
+        'base_predictions__spec__rbs__model__C': [0.3],
+        'base_predictions__spec__rbs__model__coef0': [0],
+        'base_predictions__spec__rbs__model__random_state': [42],
 
-    'base_predictions__chro__pol__model__gamma': ['scale'],
-    'base_predictions__chro__pol__model__degree': [4],
-    'base_predictions__chro__pol__model__C': [1],
-    'base_predictions__chro__pol__model__coef0': [0],
-    'base_predictions__chro__pol__model__random_state': [42],
+        'base_predictions__chro__pol__model__gamma': ['scale'],
+        'base_predictions__chro__pol__model__degree': [5],
+        'base_predictions__chro__pol__model__C': [0.7],
+        'base_predictions__chro__pol__model__coef0': [0],
+        'base_predictions__chro__pol__model__random_state': [42],
 
-    'base_predictions__chro__lin__model__gamma': ['scale'],
-    'base_predictions__chro__lin__model__C': [1],
-    'base_predictions__chro__lin__model__coef0': [0],
-    'base_predictions__chro__lin__model__random_state': [42],
+        'base_predictions__chro__lin__model__gamma': ['scale'],
+        'base_predictions__chro__lin__model__C': [0.1],
+        'base_predictions__chro__lin__model__coef0': [0],
+        'base_predictions__chro__lin__model__random_state': [42],
 
-    'base_predictions__chro__rbc__model__gamma': ['scale'],
-    'base_predictions__chro__rbc__model__C': [1],
-    'base_predictions__chro__rbc__model__coef0': [0],
-    'base_predictions__chro__rbc__model__random_state': [42],
+        'base_predictions__chro__rbc__model__gamma': ['scale'],
+        'base_predictions__chro__rbc__model__C': [0.05],
+        'base_predictions__chro__rbc__model__coef0': [0],
+        'base_predictions__chro__rbc__model__random_state': [42],
 
-    'meta_predictions__LOG__penalty': ['l2'],
-    'meta_predictions__LOG__C': [1],
-    'meta_predictions__LOG__solver': ['lbfgs'],
-    'meta_predictions__LOG__multi_class': ['multinomial'],
-    'meta_predictions__LOG__max_iter': [1000],
-    'meta_predictions__LOG__random_state': [42],
+        'meta_predictions__LOG__penalty': ['l2'],
+        'meta_predictions__LOG__C': [0.1],
+        'meta_predictions__LOG__solver': ['lbfgs'],
+        'meta_predictions__LOG__multi_class': ['multinomial'],
+        'meta_predictions__LOG__max_iter': [1000],
+        'meta_predictions__LOG__random_state': [42],
     }
 
 pgpg = list(ParameterGrid(param_grid_default))
