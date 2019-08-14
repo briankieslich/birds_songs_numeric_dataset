@@ -6,7 +6,7 @@ Read the docs, obey PEP 8 and PEP 20 (Zen of Python, import this)
 Build on:    Spyder
 Python vver: 3.7.3
 
-Created on Tue Jul 16 17:03:30 2019
+Created on Thu Aug 15 00:27:02 2019
 
 @author: brian
 """
@@ -145,9 +145,20 @@ est_log = Pipeline([('LOG', LogisticRegression())])
 est_rfc = Pipeline([('RFC', RandomForestClassifier())])
 est_knn = Pipeline([('KNN', KNeighborsClassifier())])
 
+# clf = Pipeline(steps=[('base_predictions', base_transform),
+#                       ('scaler', StandardScaler()),
+#                       ('meta_predictions', est_log)
+#                       ])
+
 clf = Pipeline(steps=[('base_predictions', base_transform),
                       ('scaler', StandardScaler()),
-                      ('meta_predictions', est_log)
+                      ('meta_predictions', VotingClassifier(
+                              estimators=[
+                                      ('LOG', est_log),
+                                      ('RFC', est_rfc),
+                                      # ('KNN', est_knn)
+                                      ],
+                              voting='soft'))
                       ])
 
 
@@ -197,13 +208,24 @@ def ransea():
         [0, 0.01, 0.02, 0.05, 0.1, 0.5, 1],
         'base_predictions__chro__rbc__model__random_state': [42],
 
-        'meta_predictions__LOG__penalty': ['l2'],
-        'meta_predictions__LOG__C': [0.1] +
-        [0.05, 0.8, 0.1, 0.15, 0.2, 0.4, 0.5],
-        'meta_predictions__LOG__solver': ['lbfgs'],
-        'meta_predictions__LOG__multi_class': ['multinomial'],
-        'meta_predictions__LOG__max_iter': [1000],
-        'meta_predictions__LOG__random_state': [42],
+        'meta_predictions__RFC__RFC__n_estimators': [100] +
+        [10, 30, 50, 80, 100, 110, 130],
+        'meta_predictions__RFC__RFC__criterion': ['gini'],
+        'meta_predictions__RFC__RFC__max_depth': [None],
+        'meta_predictions__RFC__RFC__random_state': [42],
+
+        # 'meta_predictions__KNN__KNN__n_neighbors': [5], #
+        # 'meta_predictions__KNN__KNN__weights': ['uniform'], #
+        # 'meta_predictions__KNN__KNN__p': [2], #
+
+        'meta_predictions__LOG__LOG__penalty': ['l2'],
+        'meta_predictions__LOG__LOG__C': [1] +
+        [0.05, 0.8, 0.1, 0.1, 0.4, 0.7, 1, 1.5, 2],
+        'meta_predictions__LOG__LOG__solver': ['lbfgs'],
+        'meta_predictions__LOG__LOG__multi_class': ['multinomial'],
+        'meta_predictions__LOG__LOG__max_iter': [1000],
+        'meta_predictions__LOG__LOG__random_state': [42],
+
         }
 
     top_score = 0.90
