@@ -84,7 +84,7 @@ class ModelTransformer(BaseEstimator, TransformerMixin):
                 y = y_train[train_index]
             else:
                 y = y_train
-            skf = StratifiedKFold(n_splits=5, random_state=42)
+            skf = StratifiedKFold(n_splits=4, random_state=42)
             dfx = pd.DataFrame(index=[*range(X.shape[0])], columns=[self.name])
             for train_ind, val_ind in skf.split(X, y):
                 X_tra = X[train_ind]
@@ -108,7 +108,7 @@ def run_clf(param):
     global train_index
     clf.set_params(**param)
     total = list()
-    skf = StratifiedKFold(n_splits=4, random_state=42)
+    skf = StratifiedKFold(n_splits=5, random_state=42)
     for train_index, val_index in skf.split(X_train, y_train):
         X_tra = X_train[train_index]
         X_val = X_train[val_index]
@@ -146,7 +146,7 @@ est_rfc = Pipeline([('RFC', RandomForestClassifier())])
 est_knn = Pipeline([('KNN', KNeighborsClassifier())])
 
 clf = Pipeline(steps=[('base_predictions', base_transform),
-                      ('scaler', StandardScaler),
+                      ('scaler', StandardScaler()),
                       ('meta_predictions', est_log)
                       ])
 
@@ -154,57 +154,59 @@ clf = Pipeline(steps=[('base_predictions', base_transform),
 # %% Homemade Gradient booster, more like random search:
 def ransea():
     param_grid_values = {
-        'base_predictions__spec__knn__model__n_neighbors': [5] +
+        'base_predictions__spec__knn__model__n_neighbors': [3] +
         [1, 2, 3, 4, 5],
-        'base_predictions__spec__knn__model__weights': ['uniform'] +
-        ['uniform', 'distance'],
-        'base_predictions__spec__knn__model__p': [2] +
+        'base_predictions__spec__knn__model__weights': ['distance'],
+        'base_predictions__spec__knn__model__p': [1] +
         [1, 2],
 
-        'base_predictions__spec__dtc__model__criterion': ['gini'] +
-        ['gini', 'entropy'],
-        'base_predictions__spec__dtc__model__max_depth': [None] +
+        'base_predictions__spec__dtc__model__criterion': ['gini'],
+        'base_predictions__spec__dtc__model__max_depth': [50] +
         [*range(10, 151, 20)],
         'base_predictions__spec__dtc__model__random_state': [42],
 
-        'base_predictions__spec__rbs__model__gamma': [0.005] +
-        [*np.linspace(0.001, 0.007, 7)],
-        'base_predictions__spec__rbs__model__C': [1] +
-        [0.3, 0.5, 0.7, 1, 1.1, 1.5],
-        'base_predictions__spec__rbs__model__coef0': [0],
+        'base_predictions__spec__rbs__model__gamma': [0.001] +
+        [*np.linspace(0.0005, 0.0045, 11)],
+        'base_predictions__spec__rbs__model__C': [0.3] +
+        [0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 1],
+        'base_predictions__spec__rbs__model__coef0': [0] +
+        [0, 0.01, 0.02, 0.05, 0.1, 0.5, 1],
         'base_predictions__spec__rbs__model__random_state': [42],
 
-        'base_predictions__chro__pol__model__gamma': [0.005] +
+        'base_predictions__chro__pol__model__gamma': [0.003] +
         [*np.linspace(0.001, 0.007, 7)],
-        'base_predictions__chro__pol__model__degree': [4] +
-        [5, 6, 7, 8, 9, 10],
-        'base_predictions__chro__pol__model__C': [1] +
-        [*np.linspace(0.7, 1.6, 10)],
-        'base_predictions__chro__pol__model__coef0': [0],
+        'base_predictions__chro__pol__model__degree': [7] +
+        [4, 5, 6, 7, 8, 9, 10],
+        'base_predictions__chro__pol__model__C': [0.8] +
+        [*np.linspace(0.4, 1.2, 9)],
+        'base_predictions__chro__pol__model__coef0': [0] +
+        [0, 0.01, 0.02, 0.05, 0.1, 0.5, 1],
         'base_predictions__chro__pol__model__random_state': [42],
 
-        'base_predictions__chro__lin__model__C': [1] +
+        'base_predictions__chro__lin__model__C': [0.1] +
         [0.1, 0.2, 0.4, 0.7, 1, 1.1, 1.5],
-        'base_predictions__chro__lin__model__coef0': [0],
+        'base_predictions__chro__lin__model__coef0': [0] +
+        [0, 0.01, 0.02, 0.05, 0.1, 0.5, 1],
         'base_predictions__chro__lin__model__random_state': [42],
 
-        'base_predictions__chro__rbc__model__gamma': [0.005] +
+        'base_predictions__chro__rbc__model__gamma': [0.003] +
         [*np.linspace(0.001, 0.007, 7)],
-        'base_predictions__chro__rbc__model__C': [1] +
-        [0.05, 0.1, 0.2, 0.4, 0.7, 1],
-        'base_predictions__chro__rbc__model__coef0': [0],
+        'base_predictions__chro__rbc__model__C': [0.05] +
+        [0.01, 0.05, 0.1, 0.2, 0.4, 0.7, 1],
+        'base_predictions__chro__rbc__model__coef0': [0] +
+        [0, 0.01, 0.02, 0.05, 0.1, 0.5, 1],
         'base_predictions__chro__rbc__model__random_state': [42],
 
         'meta_predictions__LOG__penalty': ['l2'],
         'meta_predictions__LOG__C': [0.1] +
-        [0.1, 0.2, 0.4, 0.5],
+        [0.05, 0.8, 0.1, 0.15, 0.2, 0.4, 0.5],
         'meta_predictions__LOG__solver': ['lbfgs'],
         'meta_predictions__LOG__multi_class': ['multinomial'],
         'meta_predictions__LOG__max_iter': [1000],
         'meta_predictions__LOG__random_state': [42],
         }
 
-    top_score = 0.8613
+    top_score = 0.90
     search_params = [k for k, value in
                      param_grid_values.items() if len(value) > 1]
 
@@ -212,8 +214,9 @@ def ransea():
     for key in search_params:
         run_dict[key] = [param_grid_values[key][0]]
 
-    proba_count = np.array([1]*len(search_params))
-
+    proba_count = np.array([len(param_grid_values[key]) - 1 for
+                            key in search_params])
+    print(proba_count)
     param_grid_basic = dict()
     for key, value in param_grid_values.items():
         if key in search_params:
@@ -223,9 +226,10 @@ def ransea():
         else:
             param_grid_basic[key] = value
 
-    for i in range(8):
+    for i in range(4):
+        print()
 
-        part_param = np.random.choice(search_params, size=4,
+        part_param = np.random.choice(search_params, size=6,
                                       replace=False,
                                       p=proba_count/np.sum(proba_count))
 
@@ -244,51 +248,49 @@ def ransea():
 
         best_score = sorted(results, key=lambda x: x[0])[-1][0]
         print(f'Score: {best_score}')
-        print()
 
         if top_score > best_score:
             continue
 
         top_score = best_score
 
-        comb = []
-        for t in results:
-            if t[0] == best_score:
-                comb.append(t[1])
-
         for key in part_param:
-            scor = np.sum([1 if t[key] == param_grid[key][0] else -1 for
-                           t in comb])
+            scor_0 = np.sum([t[0] for t in results if
+                             t[1][key] == param_grid[key][0]])
+            scor_1 = np.sum([t[0] for t in results if
+                             t[1][key] == param_grid[key][1]])
+
             param_list = param_grid_values[key]
             ind_0 = param_list.index(param_grid[key][0])
             ind_1 = param_list.index(param_grid[key][1])
+            ind_t = param_list.index(param_grid_values[key][0])
 
-            if scor < 0:
-                if param_grid_values[key][0] > param_grid[key][1]:
+            if scor_0 > scor_1:
+                if ind_t == ind_1:
+                    param_grid_values[key][0] = param_grid[key][0]
+                if ind_1 == ind_0 + 1:
+                    ind_1 = len(param_list) - 1
+                else:
+                    ind_1 -= 1
+            if scor_0 < scor_1:
+                if ind_t == ind_0:
                     param_grid_values[key][0] = param_grid[key][1]
                 if ind_0 == ind_1 - 1:
                     ind_0 = 1
                 else:
                     ind_0 += 1
-            elif scor > 0:
-                if param_grid_values[key][0] < param_grid[key][0]:
-                    param_grid_values[key][0] = param_grid[key][0]
-
-                if ind_1 == ind_0 + 1:
-                    ind_1 = len(param_list) - 1
-                else:
-                    ind_1 -= 1
             else:
-                temp = param_grid_values[key][0]
-                if temp < param_grid[key][0]:
-                    param_grid_values[key][0] = param_grid[key][0]
-                elif temp > param_grid[key][1]:
-                    param_grid_values[key][0] = param_grid[key][1]
+                pass
 
             param_grid_basic[key] = [param_grid_values[key][ind_0],
                                      param_grid_values[key][ind_1]]
 
             run_dict[key].append(param_grid_basic[key])
+
+        for i, key in enumerate(search_params):
+            if (key in part_param) and (proba_count[i] > 2):
+                proba_count[i] -= 1
+        print(proba_count)
 
     for key, value in run_dict.items():
         print(key)
@@ -304,31 +306,30 @@ ransea()
 
 # %% Baseline:
 param_grid_default = {
-        'base_predictions__spec__knn__model__n_neighbors': [1],
-        'base_predictions__spec__knn__model__weights': ['uniform'],
+        'base_predictions__spec__knn__model__n_neighbors': [3],
+        'base_predictions__spec__knn__model__weights': ['distance'],
         'base_predictions__spec__knn__model__p': [1],
 
         'base_predictions__spec__dtc__model__criterion': ['gini'],
-        'base_predictions__spec__dtc__model__max_depth': [60],
+        'base_predictions__spec__dtc__model__max_depth': [50],
         'base_predictions__spec__dtc__model__random_state': [42],
 
-        'base_predictions__spec__rbs__model__gamma': ['scale'],
+        'base_predictions__spec__rbs__model__gamma': [0.001],
         'base_predictions__spec__rbs__model__C': [0.3],
         'base_predictions__spec__rbs__model__coef0': [0],
         'base_predictions__spec__rbs__model__random_state': [42],
 
-        'base_predictions__chro__pol__model__gamma': ['scale'],
-        'base_predictions__chro__pol__model__degree': [5],
-        'base_predictions__chro__pol__model__C': [0.7],
+        'base_predictions__chro__pol__model__gamma': [0.003],
+        'base_predictions__chro__pol__model__degree': [7],
+        'base_predictions__chro__pol__model__C': [0.8],
         'base_predictions__chro__pol__model__coef0': [0],
         'base_predictions__chro__pol__model__random_state': [42],
 
-        'base_predictions__chro__lin__model__gamma': ['scale'],
         'base_predictions__chro__lin__model__C': [0.1],
         'base_predictions__chro__lin__model__coef0': [0],
         'base_predictions__chro__lin__model__random_state': [42],
 
-        'base_predictions__chro__rbc__model__gamma': ['scale'],
+        'base_predictions__chro__rbc__model__gamma': [0.003],
         'base_predictions__chro__rbc__model__C': [0.05],
         'base_predictions__chro__rbc__model__coef0': [0],
         'base_predictions__chro__rbc__model__random_state': [42],
@@ -351,6 +352,7 @@ best_score = sorted(results, key=lambda x: x[0])[-1][0]
 print(f'Score: {best_score}')
 print()
 # Score 0.853409
+# 0.9017045454545454
 
 # %% Making final run
 param_grid_fit = dict([(k, v[0]) for k, v in param_grid_default.items()])
@@ -359,7 +361,7 @@ clf.fit(X_train, y_train)
 
 print(clf.score(X_test, y_test))
 # 0.970408 on default settings
-
+# 0.9847227234452063 just on log
 
 # %% Standard values:
 """
