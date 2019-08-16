@@ -163,167 +163,150 @@ clf = Pipeline(steps=[('base_predictions', base_transform),
 
 
 # %% Homemade Gradient booster, more like random search:
-def ransea():
-    param_grid_values = {
-        'base_predictions__spec__knn__model__n_neighbors': [3] +
-        [1, 2, 3, 4, 5],
-        'base_predictions__spec__knn__model__weights': ['distance'],
-        'base_predictions__spec__knn__model__p': [1] +
-        [1, 2],
 
-        'base_predictions__spec__dtc__model__criterion': ['gini'],
-        'base_predictions__spec__dtc__model__max_depth': [50] +
-        [*range(10, 151, 20)],
-        'base_predictions__spec__dtc__model__random_state': [42],
+param_values = {
+    'base_predictions__spec__knn__model__n_neighbors': [5] +
+    [2, 3, 4, 5, 6],
+    'base_predictions__spec__knn__model__weights': ['uniform'] +
+    ['uniform', 'distance'],
+    'base_predictions__spec__knn__model__p': [2] +
+    [1, 2],
 
-        'base_predictions__spec__rbs__model__gamma': [0.001] +
-        [*np.linspace(0.0005, 0.0045, 11)],
-        'base_predictions__spec__rbs__model__C': [0.3] +
-        [0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 1],
-        'base_predictions__spec__rbs__model__coef0': [0] +
-        [0, 0.01, 0.02, 0.05, 0.1, 0.5, 1],
-        'base_predictions__spec__rbs__model__random_state': [42],
+    'base_predictions__spec__dtc__model__criterion': ['gini'],
+    'base_predictions__spec__dtc__model__max_depth': [50] +
+    [*range(10, 131, 20)],
+    'base_predictions__spec__dtc__model__random_state': [42],
 
-        'base_predictions__chro__pol__model__gamma': [0.003] +
-        [*np.linspace(0.001, 0.007, 7)],
-        'base_predictions__chro__pol__model__degree': [7] +
-        [4, 5, 6, 7, 8, 9, 10],
-        'base_predictions__chro__pol__model__C': [0.8] +
-        [*np.linspace(0.4, 1.2, 9)],
-        'base_predictions__chro__pol__model__coef0': [0] +
-        [0, 0.01, 0.02, 0.05, 0.1, 0.5, 1],
-        'base_predictions__chro__pol__model__random_state': [42],
+    'base_predictions__spec__rbs__model__gamma': [0.005] +
+    [*np.linspace(0.001, 0.007, 7)],
+    'base_predictions__spec__rbs__model__C': [1] +
+    [*np.linspace(0.2, 1.4, 7)],
+    'base_predictions__spec__rbs__model__coef0': [0.0] +
+    [0, 0.01, 0.02, 0.05, 0.1, 0.5, 1],
+    'base_predictions__spec__rbs__model__random_state': [42],
 
-        'base_predictions__chro__lin__model__C': [0.1] +
-        [0.1, 0.2, 0.4, 0.7, 1, 1.1, 1.5],
-        'base_predictions__chro__lin__model__coef0': [0] +
-        [0, 0.01, 0.02, 0.05, 0.1, 0.5, 1],
-        'base_predictions__chro__lin__model__random_state': [42],
+    'base_predictions__chro__pol__model__gamma': [0.005] +
+    [*np.linspace(0.003, 0.007, 5)],
+    'base_predictions__chro__pol__model__degree': [4] +
+    [3, 4, 5, 6, 7, 8, 9, 10],
+    'base_predictions__chro__pol__model__C': [1] +
+    [*np.linspace(0.5, 1.2, 8)],
+    'base_predictions__chro__pol__model__coef0': [0] +
+    [0, 0.01, 0.02, 0.05, 0.1, 0.5, 0.9],
+    'base_predictions__chro__pol__model__random_state': [42],
 
-        'base_predictions__chro__rbc__model__gamma': [0.003] +
-        [*np.linspace(0.001, 0.007, 7)],
-        'base_predictions__chro__rbc__model__C': [0.05] +
-        [0.01, 0.05, 0.1, 0.2, 0.4, 0.7, 1],
-        'base_predictions__chro__rbc__model__coef0': [0] +
-        [0, 0.01, 0.02, 0.05, 0.1, 0.5, 1],
-        'base_predictions__chro__rbc__model__random_state': [42],
+    'base_predictions__chro__lin__model__C': [1] +
+    [0.1, 0.2, 0.4, 0.7, 1, 1.1, 1.5],
+    'base_predictions__chro__lin__model__coef0': [0] +
+    [0, 0.01, 0.02, 0.05, 0.1, 0.5, 1],
+    'base_predictions__chro__lin__model__random_state': [42],
 
-        'meta_predictions__RFC__RFC__n_estimators': [100] +
-        [10, 30, 50, 80, 100, 110, 130],
-        'meta_predictions__RFC__RFC__criterion': ['gini'],
-        'meta_predictions__RFC__RFC__max_depth': [None],
-        'meta_predictions__RFC__RFC__random_state': [42],
+    'base_predictions__chro__rbc__model__gamma': [0.005] +
+    [*np.linspace(0.003, 0.008, 6)],
+    'base_predictions__chro__rbc__model__C': [1] +
+    [*np.linspace(0.5, 1.2, 8)],
+    'base_predictions__chro__rbc__model__coef0': [0] +
+    [0, 0.01, 0.02, 0.05, 0.1, 0.5, 1],
+    'base_predictions__chro__rbc__model__random_state': [42],
 
-        # 'meta_predictions__KNN__KNN__n_neighbors': [5], #
-        # 'meta_predictions__KNN__KNN__weights': ['uniform'], #
-        # 'meta_predictions__KNN__KNN__p': [2], #
+    'meta_predictions__RFC__RFC__n_estimators': [100] +
+    [*range(50, 100, 11)],
+    'meta_predictions__RFC__RFC__criterion': ['gini'],
+    'meta_predictions__RFC__RFC__max_depth': [None],
+    'meta_predictions__RFC__RFC__random_state': [42],
 
-        'meta_predictions__LOG__LOG__penalty': ['l2'],
-        'meta_predictions__LOG__LOG__C': [1] +
-        [0.05, 0.8, 0.1, 0.1, 0.4, 0.7, 1, 1.5, 2],
-        'meta_predictions__LOG__LOG__solver': ['lbfgs'],
-        'meta_predictions__LOG__LOG__multi_class': ['multinomial'],
-        'meta_predictions__LOG__LOG__max_iter': [1000],
-        'meta_predictions__LOG__LOG__random_state': [42],
+    # 'meta_predictions__KNN__KNN__n_neighbors': [5], #
+    # 'meta_predictions__KNN__KNN__weights': ['uniform'], #
+    # 'meta_predictions__KNN__KNN__p': [2], #
 
-        }
+    'meta_predictions__LOG__LOG__penalty': ['l2'],
+    'meta_predictions__LOG__LOG__C': [1] +
+    [0.05, 0.1, 0.4, 0.7, 1, 1.2],
+    'meta_predictions__LOG__LOG__solver': ['lbfgs'],
+    'meta_predictions__LOG__LOG__multi_class': ['multinomial'],
+    'meta_predictions__LOG__LOG__max_iter': [1000],
+    'meta_predictions__LOG__LOG__random_state': [42],
 
-    top_score = 0.90
-    search_params = [k for k, value in
-                     param_grid_values.items() if len(value) > 1]
+    }
 
-    run_dict = dict()
-    for key in search_params:
-        run_dict[key] = [param_grid_values[key][0]]
+top_score = 0.86
+search_params = [k for k, value in
+                 param_values.items() if len(value) > 1]
 
-    proba_count = np.array([len(param_grid_values[key]) - 1 for
-                            key in search_params])
-    print(proba_count)
-    param_grid_basic = dict()
-    for key, value in param_grid_values.items():
-        if key in search_params:
-            # nr = np.random.choice(len(value)-1)
-            # param_grid_basic[key] = [value[nr], value[nr+1]]
-            param_grid_basic[key] = [value[1], value[-1]]   #
-        else:
-            param_grid_basic[key] = value
+run_dict = dict()
+for key in search_params:
+    run_dict[key] = [param_values[key][0]]
 
-    for i in range(4):
-        print()
+proba_count = np.array([len(param_values[key]) - 1 for
+                        key in search_params])
 
-        part_param = np.random.choice(search_params, size=6,
-                                      replace=False,
-                                      p=proba_count/np.sum(proba_count))
-
-        param_grid = param_grid_basic.copy()
-        for key, value in param_grid_basic.items():
-            if key not in search_params:
-                param_grid[key] = value
-            elif key not in part_param:
-                param_grid[key] = [value[0]]
-
-        pgpg = list(ParameterGrid(param_grid))
-        print(f'Combinations: {len(pgpg)}')
-
-        with mp.Pool() as pool:
-            results = pool.map(run_clf, pgpg)
-
-        best_score = sorted(results, key=lambda x: x[0])[-1][0]
-        print(f'Score: {best_score}')
-
-        if top_score > best_score:
-            continue
-
-        top_score = best_score
-
-        for key in part_param:
-            scor_0 = np.sum([t[0] for t in results if
-                             t[1][key] == param_grid[key][0]])
-            scor_1 = np.sum([t[0] for t in results if
-                             t[1][key] == param_grid[key][1]])
-
-            param_list = param_grid_values[key]
-            ind_0 = param_list.index(param_grid[key][0])
-            ind_1 = param_list.index(param_grid[key][1])
-            ind_t = param_list.index(param_grid_values[key][0])
-
-            if scor_0 > scor_1:
-                if ind_t == ind_1:
-                    param_grid_values[key][0] = param_grid[key][0]
-                if ind_1 == ind_0 + 1:
-                    ind_1 = len(param_list) - 1
-                else:
-                    ind_1 -= 1
-            if scor_0 < scor_1:
-                if ind_t == ind_0:
-                    param_grid_values[key][0] = param_grid[key][1]
-                if ind_0 == ind_1 - 1:
-                    ind_0 = 1
-                else:
-                    ind_0 += 1
-            else:
-                pass
-
-            param_grid_basic[key] = [param_grid_values[key][ind_0],
-                                     param_grid_values[key][ind_1]]
-
-            run_dict[key].append(param_grid_basic[key])
-
-        for i, key in enumerate(search_params):
-            if (key in part_param) and (proba_count[i] > 2):
-                proba_count[i] -= 1
-        print(proba_count)
-
-    for key, value in run_dict.items():
-        print(key)
-        print(value)
+for i in range(4):
     print()
-    for key, value in param_grid_basic.items():
-        print(key)
-        print(value[0])
+    print(proba_count)
 
+    part_param = np.random.choice(search_params, size=6,
+                                  replace=False,
+                                  p=proba_count/np.sum(proba_count))
 
-ransea()
+    param_grid = dict()
+    for key, value in param_values.items():
+        if key in part_param:
+            param_grid[key] = [value[1], value[-1]]
+        else:
+            param_grid[key] = [value[0]]
+
+    pgpg = list(ParameterGrid(param_grid))
+    print(f'Combinations: {len(pgpg)}')
+
+    with mp.Pool() as pool:
+        results = pool.map(run_clf, pgpg)
+
+    best_score = sorted(results, key=lambda x: x[0])[-1][0]
+    print(f'Score: {best_score}')
+
+    if top_score > best_score:
+        continue
+
+    top_score = best_score
+
+    for key in part_param:
+        scor_0 = np.sum([t[0] for t in results if
+                         t[1][key] == param_grid[key][0]])
+        scor_1 = np.sum([t[0] for t in results if
+                         t[1][key] == param_grid[key][1]])
+
+        param_list = param_values[key]
+        ind_t = param_list[1:].index(param_values[key][0])
+        ind_0 = 1
+        ind_1 = len(param_list) - 1
+
+        if scor_0 > scor_1:
+            if ind_t == ind_1:
+                param_values[key][0] = param_values[key][1]
+            if ind_1 != ind_0 + 1:
+                param_values[key].pop(-1)
+
+        elif scor_0 < scor_1:
+            if ind_t == ind_0:
+                param_values[key][0] = param_values[key][-1]
+            if ind_0 != ind_1 - 1:
+                param_values[key].pop(1)
+        else:
+            pass
+
+        run_dict[key].append(param_grid[key])
+
+    for i, key in enumerate(search_params):
+        if (key in part_param) and (proba_count[i] > 2):
+            proba_count[i] -= 1
+
+for key, value in run_dict.items():
+    print(key)
+    print(value)
+print()
+for key, values in param_values.items():
+    print(key)
+    print(values)
 
 
 # %% Baseline:
@@ -377,7 +360,7 @@ print()
 # 0.9017045454545454
 
 # %% Making final run
-param_grid_fit = dict([(k, v[0]) for k, v in param_grid_default.items()])
+param_grid_fit = dict([(k, v[0]) for k, v in param_values.items()])
 clf.set_params(**param_grid_fit)
 clf.fit(X_train, y_train)
 
